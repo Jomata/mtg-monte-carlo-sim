@@ -1,6 +1,21 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
+import YAML from 'yaml'
+import {script} from './samples'
+import { MTGScript } from './models/classes';
+import MTGSim from './models/sim';
+
+//Load file content from script.yaml
+
+const parsed = YAML.parse(script) as MTGScript;
+
+let sim = new MTGSim(parsed);
+
+const runSim  = () => {
+  console.log('Running sim')
+  sim.run(1)
+}
 
 function App() {
   return (
@@ -12,11 +27,10 @@ function App() {
         </p>
         <a
           className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="#"
+          onClick={runSim}
         >
-          Learn React
+          Run
         </a>
       </header>
     </div>

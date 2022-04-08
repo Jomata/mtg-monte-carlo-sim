@@ -65,7 +65,7 @@ on:
   mainOne:
 
   ## By priority
-  ## Priority #1 is combing if we can
+  ## Priority #1 is combo-ing if we can
   - name: Cast Greasefang if parhelion in yard
     if:
       - hand: Greasefang, Okiba Boss
@@ -93,6 +93,7 @@ on:
       - tapLand: 2
       - cast: Revival // Revenge
 
+  ## Priority #2 is finding combo pieces
   - name: Wish for a greasefang if none in hand
     if:
       - hand: wishclaw talisman
@@ -143,7 +144,6 @@ on:
       - tapLand: 3
       - flashback: faithless looting
   
-  ## 2 mana plays
   - name: Cast goblin engineer if we don't have a parthelion in yard already
     if:
       - hand: goblin engineer
@@ -162,7 +162,7 @@ on:
       - tapLand: 2
       - cast: undead butler
   
-  ## 1 mana plays
+  ## Priority #3 is digging for pieces
   - name: If we have faithless looting and a parhelion, we loot it away
     if: 
       - hand: faithless looting
@@ -179,7 +179,16 @@ on:
     do:
       - tapLand: 1
       - cast: Stitcher's Supplier
-      
+  
+  ## Priority #4 is just casting greasefang if we have nothing better to do
+  - name: Cast Greasefang just in case we mill parthelion later
+    if:
+      - hand: Greasefang, Okiba Boss
+      - lands: 3
+    do:
+      - tapLand: 3
+      - cast: Greasefang, Okiba Boss
+
   - name: if no supplier, cast faithless anyway to dig through the deck
     if: 
       - hand: faithless looting

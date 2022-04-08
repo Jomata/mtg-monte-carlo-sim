@@ -46,7 +46,7 @@ class MTGSim {
                 let count = parseInt(match[1]);
                 let name = match[2];
                 //Ignore set and number for now
-                return Array(count).fill({
+                return Array(count).fill(true).map(_ => {return {
                     name: name,
                     types: ["Haunted Ridge",
                     "Hive of the Eye Tyrant",
@@ -70,7 +70,7 @@ class MTGSim {
                     "Blood Crypt",
                     "Sacred Foundry",
                     "Godless Shrine"].includes(name), //Manually checking types before implementing scryfall
-                } as MTGCard)
+                } as MTGCard})
             } else  return []
         })
     }
@@ -229,6 +229,8 @@ class MTGSim {
     }
 }
 
+//TODO: Big fix: Script should be able to handle multiple cards with the same name
+//Right now if I remove a single card named X, it will remove all cards named X
 class MTGGame {
     private _deck:MTGCard[];
     private _library:MTGCard[] = [];
@@ -290,6 +292,12 @@ class MTGGame {
         const deckSize = this._deck.length;
         //If the sum of all cards in play does not match the deck size, we have a problem
         if(this._hand.length + this._battlefield.length + this._exile.length + this._graveyard.length + this._lands.length + this._library.length !== deckSize) {
+            console.error('Hand',this.hand)
+            console.error('Battlefield',this.battlefield)
+            console.error('Exile',this.exile)
+            console.error('Graveyard',this.graveyard)
+            console.error('Lands',this.lands)
+            console.error('Library',this.library.length)
             throw new Error("Deck size does not match cards in game")
         }
 

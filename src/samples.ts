@@ -22,8 +22,8 @@ export const script = `deck: |
 
 on:
   etb:
-    - card: Stitcher Suppliers
-      do: ##Coleccion de acciones
+    - card: Stitcher's Supplier
+      do:
         - mill: 3
     - card: Undead Butler
       do:
@@ -33,33 +33,34 @@ on:
         - tutor: Parhelion II
         - discard: Parhelion II
   cast:
-    #Casting FL with parhelion in hand
-    #We already decided to cast when it is on hand, I don't think we need the if here
-    - card: faithless looting 
+    - card: faithless looting #If we don't, we want to keep it
+      if:
+        - hand: revival // revenge > can't stay away
+          exactly: 0
       do:
         - draw: 2
-        - discard: Parhelion II > any #discard parhelion if in hand, if not any other card
-        - discard: Parhelion II > any #in case we have 2 parhelions
-        # May be worth looking into to adding if to the actions as well, then we could check stuff before discarding
-    ## TODO: How to handle the decision making on what to discard after drawing?
-    ## If we have a greasefang but also a reanimate, we want to discard greasefang
-    ## But if no reanimate, we want to keep it
+        - discard: Parhelion II > land > any
+        - discard: Parhelion II > land > any
+    - card: faithless looting #If we have a reanimate, we want to discard Greasefang
+      if:
+        - hand: revival // revenge > can't stay away
+      do:
+        - draw: 2
+        - discard: Parhelion II > Greasefang, Okiba Boss > land > any
+        - discard: Parhelion II > Greasefang, Okiba Boss > land > any
     - card: Can't stay away
       if:
         - graveyard: Greasefang, Okiba Boss
       do:
         - reanimate: Greasefang, Okiba Boss
-    - card: Revival Revenge
+    - card: Revival // Revenge
       if:
-        - graveyard: Greasefang, Okiba Boss ##Do we need this? If target is not on graveyard, it will silently fail
+        - graveyard: Greasefang, Okiba Boss
       do:
         - reanimate: Greasefang, Okiba Boss
   
-  ##Play a land by default if you have one at the start of main one, can be overwritten 
   mainOne:
-  ## Do we want a [priority] property, or just going down the list in order?
-  ## Do we need the hand check, or do we automatically do that when casting?
-  
+
   ## 3 mana plays
   - name: Cast Greasefang if parhelion in yard
     if:
@@ -91,7 +92,7 @@ on:
     if:
       - battlefield: wishclaw talisman
       - hand: Greasefang, Okiba Boss
-        count: 0
+        exactly: 0
       - untapped: wishclaw talisman
       - lands: 1
     do:
@@ -103,7 +104,7 @@ on:
     if:
       - battlefield: wishclaw talisman
       - hand: goblin engineer
-        count: 0
+        exactly: 0
       - lands: 1
       - untapped: wishclaw talisman
     do:
@@ -118,7 +119,7 @@ on:
       - hand: goblin engineer
       - lands: 2
       - graveyard: Parhelion II
-        count: 0
+        exactly: 0
     do:
       - tapLand: 2
       - cast: goblin engineer
@@ -133,13 +134,13 @@ on:
       - cast: can't stay away
   - name: Reanimate greasefang w/RR if both fang and parhelion in yard
     if:
-      - hand: Revival Revenge
+      - hand: Revival // Revenge
       - graveyard: Greasefang, Okiba Boss
       - graveyard: Parhelion II
       - lands: 2
     do:
       - tapLand: 2
-      - cast: Revival Revenge
+      - cast: Revival // Revenge
   
   - name: Self mill with undead butler
     if:

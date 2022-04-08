@@ -38,6 +38,7 @@ export type Condition = {
     lands?: number,
     untapped?: string,
     count?: number,
+    exactly?: number,
 }
 
 export type Action = {
@@ -50,4 +51,5 @@ export type Action = {
     tapLand?: number,
     cast?: string,
     flashback?: string,
+    tally?: string,
 }

@@ -8,6 +8,10 @@ export type MTGCard = {
 
 export type MTGScript = {
     deck: string, //Arena format export
+    mulligan?: {
+        until: Condition[],
+        bottom: string,
+    }    
     on: {
         etb?: CardAction[],
         cast?: CardAction[],

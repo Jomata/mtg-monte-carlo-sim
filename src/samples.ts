@@ -20,9 +20,11 @@ export const script = `deck: |
   3 Revival // Revenge (RNA) 228
   1 Skysovereign, Consul Flagship (KLR) 272
 
-mulliganUntil:
-  - lands: 2
-  - bottom: Bone Shards > Undead Butler > Wishclaw Talisman > any
+mulligan:
+  until:
+    - hand: land
+      count: 2
+  bottom: Bone Shards > Undead Butler > Wishclaw Talisman > Skysovereign, Consul Flagship > Stitcher's Supplier > any
 
 on:
   etb:
@@ -47,8 +49,8 @@ on:
         - discard: Parhelion II > Skysovereign, Consul Flagship > Bone Shards > Undead Butler > land > any
       else:
         - draw: 2
-        - discard: Parhelion II > Greasefang, Okiba Boss > Bone Shards > Undead Butler > land > any
-        - discard: Greasefang, Okiba Boss > Parhelion II > Bone Shards > Undead Butler > land > any
+        - discard: Parhelion II > Skysovereign, Consul Flagship > Greasefang, Okiba Boss > Bone Shards > Undead Butler > land > any
+        - discard: Greasefang, Okiba Boss > Parhelion II > Skysovereign, Consul Flagship > Bone Shards > Undead Butler > land > any
     - card: Can't stay away
       if:
         - graveyard: Greasefang, Okiba Boss
@@ -62,7 +64,8 @@ on:
   
   mainOne:
 
-  ## 3 mana plays
+  ## By priority
+  ## Priority #1 is combing if we can
   - name: Cast Greasefang if parhelion in yard
     if:
       - hand: Greasefang, Okiba Boss
@@ -71,6 +74,25 @@ on:
     do:
       - tapLand: 3
       - cast: Greasefang, Okiba Boss
+  - name: Reanimate greasefang w/CSA if both fang and parhelion in yard
+    if:
+      - hand: Can't Stay Away
+      - graveyard: Greasefang, Okiba Boss
+      - graveyard: Parhelion II
+      - lands: 2
+    do:
+      - tapLand: 2
+      - cast: can't stay away
+  - name: Reanimate greasefang w/RR if both fang and parhelion in yard
+    if:
+      - hand: Revival // Revenge
+      - graveyard: Greasefang, Okiba Boss
+      - graveyard: Parhelion II
+      - lands: 2
+    do:
+      - tapLand: 2
+      - cast: Revival // Revenge
+
   - name: Wish for a greasefang if none in hand
     if:
       - hand: wishclaw talisman
@@ -131,24 +153,6 @@ on:
     do:
       - tapLand: 2
       - cast: goblin engineer
-  - name: Reanimate greasefang w/CSA if both fang and parhelion in yard
-    if:
-      - hand: Can't Stay Away
-      - graveyard: Greasefang, Okiba Boss
-      - graveyard: Parhelion II
-      - lands: 2
-    do:
-      - tapLand: 2
-      - cast: can't stay away
-  - name: Reanimate greasefang w/RR if both fang and parhelion in yard
-    if:
-      - hand: Revival // Revenge
-      - graveyard: Greasefang, Okiba Boss
-      - graveyard: Parhelion II
-      - lands: 2
-    do:
-      - tapLand: 2
-      - cast: Revival // Revenge
   
   - name: Self mill with undead butler
     if:

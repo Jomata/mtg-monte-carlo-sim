@@ -83,11 +83,36 @@ class MTGSim {
 
         this.game.onCast = this.runCardActions.bind(this, this.script.on?.cast || []);
         this.game.onETB = this.runCardActions.bind(this, this.script.on?.etb || []);
+        this.game.onMulligan = this.mulliganLogic.bind(this);
         //We run the script while we are under the max turn limit
         this.gameStopFlag = false;
         this.game.start();
         while (this.game.turn < MAX_TURNS && !this.gameStopFlag) {
             this.game.playTurn();
+        }
+    }
+
+    private mulliganLogic(cards:MTGCard[], mulliganCount:number): [MTGCard[] | undefined, MTGCard[]] {
+        if(this.script.mulligan) {
+            //console.log("Checking for mulligan", cards.map(c => c.name))
+            let result = this.checkConditions(this.script.mulligan.until);
+            if(result) {
+                let bottom:MTGCard[] = []
+                while(bottom.length < mulliganCount) {
+                    //Find a card that matches bottom, or a random one if no match
+                    let card = MTGGame.findCard(this.script.mulligan.bottom, cards) || cards[0];
+                    //Remove from cards
+                    cards = cards.filter(c => c !== card)
+                    //Insert it into the bottom array
+                    bottom.push(card)
+                }
+                return [cards, bottom]
+            } else {
+                return [undefined, cards]
+            }
+        }
+        else {
+            return [cards, []]
         }
     }
 
@@ -234,7 +259,7 @@ class MTGGame {
     public start() {
         this._endFlag = false;
         this._turn = 0;
-        this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5); //TODO: Copy the cards in the deck and shuffle them into the library
+        this._library = []
         this._battlefield = []
         this._graveyard = []
         this._exile = []
@@ -243,6 +268,7 @@ class MTGGame {
         this.log("Starting game")
         this.initialDraw();
         this.log("Hand", this.hand.map(c => c.name))
+
     }
     
     public end() {
@@ -258,8 +284,15 @@ class MTGGame {
 
     public onCast?:(card:MTGCard) => void;
     public onETB?:(card:MTGCard) => void;
+    public onMulligan?:(cards: MTGCard[], mulliganCount: number) => [hand:MTGCard[] | undefined, bottom:MTGCard[]]
 
     public playTurn() {
+        const deckSize = this._deck.length;
+        //If the sum of all cards in play does not match the deck size, we have a problem
+        if(this._hand.length + this._battlefield.length + this._exile.length + this._graveyard.length + this._lands.length + this._library.length !== deckSize) {
+            throw new Error("Deck size does not match cards in game")
+        }
+
         if(this._endFlag) return;
         //Untap step
         this._turn++;
@@ -295,8 +328,45 @@ class MTGGame {
     }
 
     private initialDraw() {
+        this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5);
         let cards = this._library.splice(-7);
-        this._hand = cards;
+        //TODO: Check no more than 6 mulligans
+        if(this.onMulligan) {
+            let mulliganCount = 0
+            let hand:MTGCard[] | undefined = []
+            let bottom:MTGCard[] = []
+            do {
+                if(mulliganCount > 6) {
+                    hand = []
+                    bottom = cards
+                } else {
+                    this._hand = cards; //Need to assign to hand for condition checking
+                    [hand, bottom] = this.onMulligan(cards,mulliganCount);
+                    if(hand === undefined) {
+                        mulliganCount++;
+                        this.log(`Mulligan to ${7 - mulliganCount}`, cards.map(c => c.name).join(" | "))
+                        this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5);
+                        cards = this._library.splice(-7);
+                    }
+                }
+            } while(hand === undefined)
+            //Keep on mulliganing while hand returns undefined, need to pass to onMulligan how many mulligans we're into
+            this._hand = hand;
+            //this.log("Starting Hand", this.hand.map(c => c.name).join(" | "))
+            //this.log("Bottoming", bottom.map(c => c.name).join(" | "))
+            if(hand.length + bottom.length !== 7) {
+                //throw new Error("Too many cards in mulligan")
+                console.error("Too many cards in mulligan")
+                console.error("Mulligan count", mulliganCount)
+                console.error("Hand", hand.map(c => c.name))
+                console.error("Bottom", bottom.map(c => c.name))
+                throw new Error("Too many cards in mulligan")
+            }
+            //Add bottom to the start of the library
+            this._library = bottom.concat(this._library);
+        } else {
+            this._hand = cards;
+        }
     }
 
     public static isMatch(identifier:string, card:MTGCard) : boolean {
@@ -321,6 +391,7 @@ class MTGGame {
     }
 
     public static findManyCards(identifier:string, cards:readonly MTGCard[]):MTGCard[] {
+        //Need to fix this, should grab starting from the first identifier
         return cards.flatMap(card => {
             if(MTGGame.findCard(identifier, [card])) return [card]
             else return []
@@ -390,6 +461,7 @@ class MTGGame {
             //And add it to the battlefield
             this._battlefield.push(card);
             //And trigger ETB
+            this.log(`${card.name} ETBs`);
             if(this.onETB) this.onETB(card);
         }
     }

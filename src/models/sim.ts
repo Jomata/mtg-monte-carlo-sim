@@ -2,9 +2,18 @@ import { Action, CardAction, Condition, MTGCard, MTGScript, PhaseAction } from "
 
 const MAX_TURNS = 50
 
-type SimTally = {
-    name: string,
-    turns: number[],
+class SimTally {
+    name: string;
+    turns: number[];
+
+    public get averageTurn() {
+        return this.turns.reduce((a, b) => a + b, 0) / this.turns.length;
+    }
+
+    constructor(name: string, turn?:number) {
+        this.name = name;
+        this.turns = turn ? [turn] : [];
+    }
 }
 
 class MTGSim {
@@ -142,8 +151,9 @@ class MTGSim {
         if(action.tally) {
             //If we have a tally, we need to add the turn to the tally
             //If we don't, we push a new tally with the current turn
-            this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push({name: action.tally, turns: [this.game.turn]})
+            this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.tally, this.game.turn));
             this.gameStopFlag = true;
+            console.log("I T E R A T I O N   E N D")
         }
     }
     
@@ -251,6 +261,11 @@ class MTGGame {
         //Automatically play any one land from hand to battlefield
         if(this._endFlag) return;
         this.playLand("Land")
+
+        this.log("[Hand]", this.hand.map(c => c.name).join(" | "))
+        this.log("[Land]", this.lands.map(c => c.name).join(" | "))
+        this.log("[Yard]", this.graveyard.map(c => c.name).join(" | "))
+
         if(this._endFlag) return;
         if(this.onMainOne) this.onMainOne();
         //Combat
@@ -337,7 +352,7 @@ class MTGGame {
     playLand(identifier:string) {
         let land = MTGGame.findCard(identifier, this._hand);
         if(land) {
-            this.log(`Playing land`,land.name);
+            //this.log(`Playing land`,land.name);
             this._lands.push(land);
             this._hand = this._hand.filter(c => c !== land);
         }
@@ -346,7 +361,7 @@ class MTGGame {
         //We grab howMany untapped lands
         let lands = this._lands.filter(card => !card.tapped).slice(0, howMany);
         //And tap them all
-        this.log(`Tapping ${lands.length} lands`);
+        //this.log(`Tapping ${lands.length} lands`);
         lands.forEach(land => land.tapped = true);
     }
     reanimate(identifier: string) {

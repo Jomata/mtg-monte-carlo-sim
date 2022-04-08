@@ -162,11 +162,11 @@ on:
   
   - name: Self mill with Stitcher
     if:
-      - hand: stitcher's supplier
+      - hand: Stitcher's Supplier
       - lands: 1
     do:
       - tapLand: 1
-      - cast: stitcher's supplier
+      - cast: Stitcher's Supplier
       
   - name: if no supplier, cast faithless anyway to dig through the deck
     if: 
@@ -187,7 +187,7 @@ on:
   endStep:
   - name: Give up if we failed by turn 5
     if:
-      - turn: 6
+      - turn: 10
     do:
       - tally: Failure
 `

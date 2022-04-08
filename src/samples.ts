@@ -20,6 +20,10 @@ export const script = `deck: |
   3 Revival // Revenge (RNA) 228
   1 Skysovereign, Consul Flagship (KLR) 272
 
+mulliganUntil:
+  - lands: 2
+  - bottom: Bone Shards > Undead Butler > Wishclaw Talisman > any
+
 on:
   etb:
     - card: Stitcher's Supplier
@@ -39,15 +43,12 @@ on:
           exactly: 0
       do:
         - draw: 2
-        - discard: Parhelion II > land > any
-        - discard: Parhelion II > land > any
-    - card: faithless looting #If we have a reanimate, we want to discard Greasefang
-      if:
-        - hand: revival // revenge > can't stay away
-      do:
+        - discard: Parhelion II > Skysovereign, Consul Flagship > Bone Shards > Undead Butler > land > any
+        - discard: Parhelion II > Skysovereign, Consul Flagship > Bone Shards > Undead Butler > land > any
+      else:
         - draw: 2
-        - discard: Parhelion II > Greasefang, Okiba Boss > land > any
-        - discard: Parhelion II > Greasefang, Okiba Boss > land > any
+        - discard: Parhelion II > Greasefang, Okiba Boss > Bone Shards > Undead Butler > land > any
+        - discard: Greasefang, Okiba Boss > Parhelion II > Bone Shards > Undead Butler > land > any
     - card: Can't stay away
       if:
         - graveyard: Greasefang, Okiba Boss
@@ -112,6 +113,13 @@ on:
       - tap: wishclaw talisman
       - exile: wishclaw talisman
       - tutor: goblin engineer
+  - name: Flashback Faithless Looting
+    if:
+      - graveyard: faithless looting
+      - lands: 3
+    do:
+      - tapLand: 3
+      - flashback: faithless looting
   
   ## 2 mana plays
   - name: Cast goblin engineer if we don't have a parthelion in yard already

@@ -21,13 +21,15 @@ export type MTGScript = {
 export type CardAction = {
     card: string,
     if?: Condition[]
-    do: Action[]
+    do: Action[],
+    else: Action[]
 }
 
 export type PhaseAction = {
     name: string,
     if?: Condition[],
-    do: Action[]
+    do: Action[],
+    else: Action[]
 }
 
 export type Condition = {

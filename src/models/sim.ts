@@ -93,11 +93,20 @@ class MTGSim {
 
     private runPhaseActions(actions?:PhaseAction[]) {
         actions?.forEach(phase => {
+            //console.debug("--- Evaluating Phase Action ---", phase.name)
             if (phase.if) {
+                //console.debug(" > Conditions:", phase.if)
                 if (this.checkConditions(phase.if)) {
+                    //console.debug(" > Conditions met, running actions")
                     this.doActions(phase.do);
+                } else if(phase.else) {
+                    //console.debug(" > Conditions not met, running else actions")
+                    this.doActions(phase.else);
+                } else {
+                    //console.debug(" > Conditions not met, no else actions")
                 }
             } else {
+                //console.debug(" > No conditions, running actions")
                 this.doActions(phase.do);
             }
         })
@@ -109,6 +118,10 @@ class MTGSim {
             if (action.if) {
                 if (this.checkConditions(action.if)) {
                     this.doActions(action.do);
+                } else if (action.else) {
+                    this.doActions(action.else);
+                } else {
+                    //console.debug(" > Conditions not met, no else actions")
                 }
             } else {
                 this.doActions(action.do);
@@ -121,6 +134,8 @@ class MTGSim {
     }
 
     private doAction(action:Action) {
+        if(this.gameStopFlag) return;
+
         if(action.mill) {
             this.game.mill(action.mill);
         }
@@ -153,7 +168,7 @@ class MTGSim {
             //If we don't, we push a new tally with the current turn
             this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.tally, this.game.turn));
             this.gameStopFlag = true;
-            console.log("I T E R A T I O N   E N D")
+            console.log("ITERATION END", action.tally?.toUpperCase())
         }
     }
     
@@ -353,6 +368,7 @@ class MTGGame {
         let land = MTGGame.findCard(identifier, this._hand);
         if(land) {
             //this.log(`Playing land`,land.name);
+            land.tapped = false;
             this._lands.push(land);
             this._hand = this._hand.filter(c => c !== land);
         }

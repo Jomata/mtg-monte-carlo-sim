@@ -14,7 +14,7 @@ let sim = new MTGSim(parsed);
 
 const runSim  = () => {
   console.log('Running sim')
-  sim.run(50)
+  sim.run(100)
 }
 
 function App() {

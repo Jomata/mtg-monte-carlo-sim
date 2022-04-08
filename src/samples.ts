@@ -184,10 +184,10 @@ on:
     do:
       - tally: Success
   
-  endstep:
+  endStep:
   - name: Give up if we failed by turn 5
     if:
-      - turn: 5
+      - turn: 6
     do:
       - tally: Failure
 `

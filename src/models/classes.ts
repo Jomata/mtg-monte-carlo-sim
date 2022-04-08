@@ -36,6 +36,7 @@ export type Condition = {
     hand?: string,
     exile?: string,
     lands?: number,
+    turn?: number,
     untapped?: string,
     count?: number,
     exactly?: number,

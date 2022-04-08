@@ -1,6 +1,4 @@
-import { Console } from "console";
-import { collapseTextChangeRangesAcrossMultipleVersions } from "typescript";
-import { Action, CardAction, Condition, MTGCard, MTGScript } from "./classes";
+import { Action, CardAction, Condition, MTGCard, MTGScript, PhaseAction } from "./classes";
 
 const MAX_TURNS = 50
 
@@ -24,7 +22,6 @@ class MTGSim {
 
     public run(times:number) {
         this.results = []
-        this.gameStopFlag = false;
         for (let i = 0; i < times; i++) {
             this.simulate();
         }
@@ -70,18 +67,23 @@ class MTGSim {
     }
 
     private simulate() {
-        this.game.onMainOne = this.scriptOnMainOne.bind(this);
+        this.game.onMainOne = this.runPhaseActions.bind(this, this.script.on?.mainOne);
+        this.game.onCombat = this.runPhaseActions.bind(this, this.script.on?.combat);
+        this.game.onMainTwo = this.runPhaseActions.bind(this, this.script.on?.mainTwo);
+        this.game.onEndStep = this.runPhaseActions.bind(this, this.script.on?.endStep);
+
         this.game.onCast = this.runCardActions.bind(this, this.script.on?.cast || []);
         this.game.onETB = this.runCardActions.bind(this, this.script.on?.etb || []);
         //We run the script while we are under the max turn limit
+        this.gameStopFlag = false;
         this.game.start();
         while (this.game.turn < MAX_TURNS && !this.gameStopFlag) {
             this.game.playTurn();
         }
     }
 
-    private scriptOnMainOne() {
-        this.script.on?.mainOne?.forEach(phase => {
+    private runPhaseActions(actions?:PhaseAction[]) {
+        actions?.forEach(phase => {
             if (phase.if) {
                 if (this.checkConditions(phase.if)) {
                     this.doActions(phase.do);
@@ -140,8 +142,8 @@ class MTGSim {
         if(action.tally) {
             //If we have a tally, we need to add the turn to the tally
             //If we don't, we push a new tally with the current turn
-            this.results.find(r => r.name == action.tally)?.turns.push(this.game.turn) || this.results.push({name: action.tally, turns: [this.game.turn]})
-            this.gameStopFlag = false;
+            this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push({name: action.tally, turns: [this.game.turn]})
+            this.gameStopFlag = true;
         }
     }
     
@@ -171,6 +173,7 @@ class MTGSim {
             if(condition.exile) return MTGGame.findCard(condition.exile, this.game.exile) !== undefined;    
             if(condition.untapped) return MTGGame.findManyCards(condition.untapped, this.game.battlefield).some(card => !card.tapped)
             if(condition.lands) return this.game.lands.filter(c => !c.tapped).length >= condition.lands;
+            if(condition.turn) return this.game.turn === condition.turn;
         }
         return false;
     }
@@ -185,6 +188,7 @@ class MTGGame {
     private _exile:MTGCard[] = [];
     private _lands:MTGCard[] = [];
     private _turn:number = 0;
+    private _endFlag = false;
 
     public get turn():number { return this._turn; }
     public get battlefield():readonly MTGCard[] { return this._battlefield; }
@@ -203,6 +207,7 @@ class MTGGame {
     }
 
     public start() {
+        this._endFlag = false;
         this._turn = 0;
         this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5); //TODO: Copy the cards in the deck and shuffle them into the library
         this._battlefield = []
@@ -213,7 +218,12 @@ class MTGGame {
         this.log("Starting game")
         this.initialDraw();
         this.log("Hand", this.hand.map(c => c.name))
-    } 
+    }
+    
+    public end() {
+        //Set a flag to stop processing events
+        this._endFlag = true;
+    }
 
     public onDraw?:(card:MTGCard) => void;
     public onMainOne?:() => void;
@@ -225,6 +235,7 @@ class MTGGame {
     public onETB?:(card:MTGCard) => void;
 
     public playTurn() {
+        if(this._endFlag) return;
         //Untap step
         this._turn++;
         //this.log(`Turn ${this._turn} start`);
@@ -234,16 +245,22 @@ class MTGGame {
         //Upkeep step
         //TODO: call events
         //Draw step
+        if(this._endFlag) return;
         if(this._turn > 1) this.draw(1);
         //Main 1
         //Automatically play any one land from hand to battlefield
+        if(this._endFlag) return;
         this.playLand("Land")
+        if(this._endFlag) return;
         if(this.onMainOne) this.onMainOne();
         //Combat
+        if(this._endFlag) return;
         if(this.onCombat) this.onCombat();
         //Main 2
+        if(this._endFlag) return;
         if(this.onMainTwo) this.onMainTwo();
         //End step
+        if(this._endFlag) return;
         if(this.onEndStep) this.onEndStep();
     }
 

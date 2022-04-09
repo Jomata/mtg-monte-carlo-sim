@@ -318,9 +318,9 @@ class MTGGame {
         if(this._endFlag) return;
         this.playLand("Land")
 
-        this.log("[Hand]", this.hand.map(c => c.name).join(" | "))
-        this.log("[Land]", this.lands.map(c => c.name).join(" | "))
-        this.log("[Yard]", this.graveyard.map(c => c.name).join(" | "))
+        //this.log("[Hand]", this.hand.map(c => c.name).join(" | "))
+        //this.log("[Land]", this.lands.map(c => c.name).join(" | "))
+        //this.log("[Yard]", this.graveyard.map(c => c.name).join(" | "))
 
         if(this._endFlag) return;
         if(this.onMainOne) this.onMainOne();
@@ -333,6 +333,10 @@ class MTGGame {
         //End step
         if(this._endFlag) return;
         if(this.onEndStep) this.onEndStep();
+
+        if(this.lands.every(c => !c.tapped)) {
+            console.warn("Ended turn doing nothing", this.hand.map(c => c.name))
+        }
     }
 
     private initialDraw() {
@@ -409,7 +413,7 @@ class MTGGame {
     exileFromYard(identifier: string) {
         let mtgCard = MTGGame.findCard(identifier, this._graveyard);
         if(mtgCard) {
-            this.log(`Exiling` , mtgCard.name)
+            //(`Exiling` , mtgCard.name)
             this._graveyard = this._graveyard.filter(card => card !== mtgCard);
             this._exile.push(mtgCard);
         }
@@ -418,7 +422,7 @@ class MTGGame {
         //Cast card from graveyard
         let mtgCard = MTGGame.findCard(identifier, this._graveyard);
         if(mtgCard) {
-            this.log(`Flashing back`, mtgCard.name)
+            //this.log(`Flashing back`, mtgCard.name)
             //And then exile it
             this._graveyard = this._graveyard.filter(card => card !== mtgCard);
             if(this.onCast) this.onCast(mtgCard);
@@ -434,7 +438,7 @@ class MTGGame {
             //If the card is a permanent, we add it to the battlefield and trigger ETB
             if(mtgCard.isPermanent) {
                 this._battlefield.push(mtgCard);
-                this.log(`${mtgCard.name} ETBs`);
+                //this.log(`${mtgCard.name} ETBs`);
                 if(this.onETB) this.onETB(mtgCard);
             }
             //If the card is not a permanent, we send it to the graveyard    
@@ -469,7 +473,7 @@ class MTGGame {
             //And add it to the battlefield
             this._battlefield.push(card);
             //And trigger ETB
-            this.log(`${card.name} ETBs`);
+            //this.log(`${card.name} ETBs`);
             if(this.onETB) this.onETB(card);
         }
     }
@@ -488,7 +492,7 @@ class MTGGame {
         //We find the card in the library using findCard
         let mtgCard = MTGGame.findCard(identifier, this._library);
         if(mtgCard) {
-            this.log(`Tutoring ${mtgCard.name}`);
+            //this.log(`Tutoring ${mtgCard.name}`);
             //We remove it from the library
             this._library = this._library.filter(c => c !== mtgCard);
             //And add it to the hand
@@ -505,7 +509,7 @@ class MTGGame {
     }
     mill(howMany: number) {
         let cards = this._library.splice(howMany * -1);
-        this.log(`Milling ${howMany} cards`, cards.map(c => c.name));
+        //this.log(`Milling ${howMany} cards`, cards.map(c => c.name));
         cards.forEach(card => {
             this._graveyard.push(card);
         })

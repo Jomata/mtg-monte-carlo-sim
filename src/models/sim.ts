@@ -39,7 +39,7 @@ class MTGSim {
     constructor(script:MTGScript) {
         this.script = script;
         let deck:MTGCard[] = this.parseDeck(script.deck);
-        console.log('Deck',deck);
+        //console.log('Deck',deck);
         this.game = new MTGGame(deck);
     }
 
@@ -49,7 +49,7 @@ class MTGSim {
         for (let i = 0; i < times; i++) {
             this.simulate();
         }
-        console.log('Results',this.results)
+        //console.log('Results',this.results)
         return this.results;
     }
 
@@ -70,6 +70,8 @@ class MTGSim {
     }
 
     private simulate() {
+        //We are only executing one action per phase for some reason
+        //We need to re-check the actions until we don't run any action
         this.game.onMainOne = this.runPhaseActions.bind(this, this.script.on?.mainOne);
         this.game.onCombat = this.runPhaseActions.bind(this, this.script.on?.combat);
         this.game.onMainTwo = this.runPhaseActions.bind(this, this.script.on?.mainTwo);
@@ -435,6 +437,8 @@ class MTGGame {
             this._graveyard = this._graveyard.filter(card => card !== mtgCard);
             if(this.onCast) this.onCast(mtgCard);
             this._exile.push(mtgCard);
+        } else {
+            console.warn(`Couldn't find card to flashback`, identifier, this._graveyard)
         }
     }
     cast(identifier: string) {
@@ -453,6 +457,8 @@ class MTGGame {
             else {
                 this._graveyard.push(mtgCard);
             }
+        } else {
+            console.warn(`Couldn't find card to cast`, identifier, this._hand)
         }
     }
     playLand(identifier:string) {
@@ -483,6 +489,8 @@ class MTGGame {
             //And trigger ETB
             this.log(`${card.name} ETBs`);
             if(this.onETB) this.onETB(card);
+        } else {
+            console.warn(`Couldn't find card to reanimate`, identifier, this._graveyard)
         }
     }
     discard(identifier: string) {
@@ -500,7 +508,7 @@ class MTGGame {
         //We find the card in the library using findCard
         let mtgCard = MTGGame.findCard(identifier, this._library);
         if(mtgCard) {
-            //this.log(`Tutoring ${mtgCard.name}`);
+            this.log(`Tutoring ${mtgCard.name}`);
             //We remove it from the library
             this._library = this._library.filter(c => c !== mtgCard);
             //And add it to the hand

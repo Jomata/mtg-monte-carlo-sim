@@ -29,8 +29,13 @@ function App() {
     try {
       let parsedScript = YAML.parse(inputScript) as MTGScript | undefined;
 
-      setValidScript(parsedScript?.deck !== undefined && parsedScript?.on !== undefined)
-      setLog("Script OK!")
+      if(parsedScript?.deck !== undefined && parsedScript?.on !== undefined) {
+        setValidScript(true)
+        setLog("Script OK!")
+      } else {
+        setValidScript(false)
+        setLog("Script is not valid")
+      }
     } catch (e) {
       setValidScript(false)
       setLog("Invalid script")
@@ -111,7 +116,46 @@ function App() {
 
   const runSim  = () => {
     setRunningSim(true)
-    const parsed = YAML.parse(script) as MTGScript;
+    const parsed = YAML.parse(inputScript) as MTGScript;
+    let sim = new MTGSim(parsed);
+    console.log('Running sim')
+    let runsCount = 100
+    let results = sim.run(runsCount)
+    let resultsLog = results.map(r => `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`)
+    let actionsLog = sim.actionLog
+    setRunningSim(false)
+    setLog(resultsLog.concat(actionsLog).join("\n"))
+  }
+
+  const runTest = () => {
+    setRunningSim(true)
+    const parsed = YAML.parse(`
+deck: |
+  Deck
+  30 Stitcher's Supplier (M19) 121
+  30 Haunted Ridge (Mid) 263
+
+on:
+  etb:
+  - card: Stitcher's Supplier
+    do:
+      - mill: 3
+  mainOne:
+  - name: Cast Supplier
+    if:
+      - hand: Stitcher's Supplier
+      - lands: 1
+      - turn: 2
+    do:
+      - tapLand: 1
+      - cast: Stitcher's Supplier
+  endStep:
+  - name: End
+    if:
+      - turn: 5
+    do:
+      - tally: Meh
+    `.trim()) as MTGScript;
     let sim = new MTGSim(parsed);
     console.log('Running sim')
     let runsCount = 100
@@ -145,6 +189,7 @@ function App() {
             <li><button onClick={validateScript}>1. Validate Script</button></li>
             <li><button onClick={asyncValidateDeck.execute} disabled={!validScript || asyncValidateDeck.status === "pending"}>2. Validate Deck</button></li>
             <li><button onClick={runSim} disabled={!validScript || !validDeck || runningSim}>3. Run Sim</button></li>
+            <li><button onClick={runTest}>Run test</button></li>
         </ol>
     </div>
     <div id="extra">

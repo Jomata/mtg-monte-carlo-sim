@@ -116,8 +116,10 @@ function App() {
     console.log('Running sim')
     let runsCount = 100
     let results = sim.run(runsCount)
+    let resultsLog = results.map(r => `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`)
+    let actionsLog = sim.actionLog
     setRunningSim(false)
-    setLog(results.map(r => `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`).join("\n"))
+    setLog(resultsLog.concat(actionsLog).join("\n"))
   }
 
   return (

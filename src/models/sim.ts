@@ -34,6 +34,7 @@ class MTGSim {
     game: MTGGame;
     results:SimTally[] = [];
     private gameStopFlag:boolean  = false;
+    actionLog:string[] = []
     
     constructor(script:MTGScript) {
         this.script = script;
@@ -44,6 +45,7 @@ class MTGSim {
 
     public run(times:number):SimTally[] {
         this.results = []
+        this.actionLog = []
         for (let i = 0; i < times; i++) {
             this.simulate();
         }
@@ -63,6 +65,10 @@ class MTGSim {
         })
     }
 
+    private logAction(...args:any[]) {
+        this.actionLog.push(args.join(' '))
+    }
+
     private simulate() {
         this.game.onMainOne = this.runPhaseActions.bind(this, this.script.on?.mainOne);
         this.game.onCombat = this.runPhaseActions.bind(this, this.script.on?.combat);
@@ -72,6 +78,9 @@ class MTGSim {
         this.game.onCast = this.runCardActions.bind(this, this.script.on?.cast || []);
         this.game.onETB = this.runCardActions.bind(this, this.script.on?.etb || []);
         this.game.onMulligan = this.mulliganLogic.bind(this);
+
+        this.game.logger = this.logAction.bind(this);
+
         //We run the script while we are under the max turn limit
         this.gameStopFlag = false;
         this.game.start();
@@ -181,7 +190,7 @@ class MTGSim {
             //If we don't, we push a new tally with the current turn
             this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.tally, this.game.turn));
             this.gameStopFlag = true;
-            console.log("ITERATION END", action.tally?.toUpperCase())
+            this.logAction("ITERATION END: ", action.tally?.toUpperCase())
         }
     }
     
@@ -238,12 +247,15 @@ class MTGGame {
     public get library():readonly MTGCard[] { return this._library; }
     public get hand():readonly MTGCard[] { return this._hand; }
 
+    public logger?: (...args: any[]) => void = console.log;
+
     constructor (deck:MTGCard[]) {
         this._deck = deck;
     }
 
     private log(...args: any[]) {
-        console.debug(`T${this.turn}`, ...args)
+        if(this.logger)
+            this.logger(`T${this.turn}`, ...args)
     }
 
     public start() {
@@ -255,10 +267,9 @@ class MTGGame {
         this._exile = []
         this._hand = []
         this._lands = []
-        this.log("Starting game")
+        this.log("=== GAME START ===")
         this.initialDraw();
-        this.log("Hand", this.hand.map(c => c.name))
-
+        //this.log("[HAND]", this.hand.map(c => c.name))
     }
     
     public end() {
@@ -306,7 +317,12 @@ class MTGGame {
         if(this._endFlag) return;
         this.playLand("Land")
 
-        //this.log("[Hand]", this.hand.map(c => c.name).join(" | "))
+        this.log("[HAND]", this.hand.map(c => c.name).join("|"))
+        if(this.battlefield.length > 0) this.log("[BATTLEFIELD]", this.battlefield.map(c => c.name).join("|"))
+        if(this.graveyard.length > 0) this.log("[GRAVEYARD]", this.graveyard.map(c => c.name).join("|"))
+        if(this.exile.length > 0) this.log("[EXILE]", this.exile.map(c => c.name).join("|"))
+        this.log(`${this.lands.length} lands`)
+        
         //this.log("[Land]", this.lands.map(c => c.name).join(" | "))
         //this.log("[Yard]", this.graveyard.map(c => c.name).join(" | "))
 
@@ -322,9 +338,9 @@ class MTGGame {
         if(this._endFlag) return;
         if(this.onEndStep) this.onEndStep();
 
-        if(this.lands.every(c => !c.tapped)) {
+        /*if(this.lands.every(c => !c.tapped)) {
             console.warn("Ended turn doing nothing", this.hand.map(c => c.name))
-        }
+        }*/
     }
 
     private initialDraw() {
@@ -344,7 +360,7 @@ class MTGGame {
                     [hand, bottom] = this.onMulligan(cards,mulliganCount);
                     if(hand === undefined) {
                         mulliganCount++;
-                        this.log(`Mulligan to ${7 - mulliganCount}`, cards.map(c => c.name).join(" | "))
+                        this.log(`Mulligan to ${7 - mulliganCount}`, cards.map(c => c.name).join("|"))
                         this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5);
                         cards = this._library.splice(-7);
                     }
@@ -364,8 +380,8 @@ class MTGGame {
             }
             if(bottom.length > 0) {
                 //Add bottom to the start of the library
-                this.log("Keeping", hand.map(c => c.name).join(" | "))
-                this.log("Bottoming", bottom.map(c => c.name).join(" | "))
+                this.log("Keeping", hand.map(c => c.name).join("|"))
+                this.log("Bottoming", bottom.map(c => c.name).join("|"))
                 this._library = bottom.concat(this._library);
             }
         } else {
@@ -414,7 +430,7 @@ class MTGGame {
         //Cast card from graveyard
         let mtgCard = MTGGame.findCard(identifier, this._graveyard);
         if(mtgCard) {
-            //this.log(`Flashing back`, mtgCard.name)
+            this.log(`Flashing back`, mtgCard.name)
             //And then exile it
             this._graveyard = this._graveyard.filter(card => card !== mtgCard);
             if(this.onCast) this.onCast(mtgCard);
@@ -430,7 +446,7 @@ class MTGGame {
             //If the card is a permanent, we add it to the battlefield and trigger ETB
             if(mtgCard.isPermanent) {
                 this._battlefield.push(mtgCard);
-                //this.log(`${mtgCard.name} ETBs`);
+                this.log(`${mtgCard.name} ETBs`);
                 if(this.onETB) this.onETB(mtgCard);
             }
             //If the card is not a permanent, we send it to the graveyard    
@@ -452,20 +468,20 @@ class MTGGame {
         //We grab howMany untapped lands
         let lands = this._lands.filter(card => !card.tapped).slice(0, howMany);
         //And tap them all
-        //this.log(`Tapping ${lands.length} lands`);
+        this.log(`Tapping ${lands.length} lands`);
         lands.forEach(land => land.tapped = true);
     }
     reanimate(identifier: string) {
         //We find the card in the graveyard using findCard
         let card = MTGGame.findCard(identifier, this._graveyard);
-        if(card) {
+        if(card && card.isPermanent) {
             this.log(`Reanimating`, card.name);
             //We remove it from the graveyard
             this._graveyard = this._graveyard.filter(c => c !== card);
             //And add it to the battlefield
             this._battlefield.push(card);
             //And trigger ETB
-            //this.log(`${card.name} ETBs`);
+            this.log(`${card.name} ETBs`);
             if(this.onETB) this.onETB(card);
         }
     }
@@ -502,6 +518,7 @@ class MTGGame {
     mill(howMany: number) {
         let cards = this._library.splice(howMany * -1);
         //this.log(`Milling ${howMany} cards`, cards.map(c => c.name));
+        this.log(`Milling`, cards.map(c => c.name).join('|'));
         cards.forEach(card => {
             this._graveyard.push(card);
         })

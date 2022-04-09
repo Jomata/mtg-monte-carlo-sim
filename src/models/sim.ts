@@ -1,4 +1,5 @@
 import { Action, CardAction, Condition, MTGCard, MTGScript, PhaseAction } from "./classes";
+import * as ls from "local-storage";
 
 const MAX_TURNS = 50
 
@@ -14,6 +15,18 @@ class SimTally {
         this.name = name;
         this.turns = turn ? [turn] : [];
     }
+}
+
+export const ARENA_EXPORT_REGEX = /(\d+) ([^(]+) \(([\S]{3})\) ([\d]+)/;
+
+export function storeCardData(set:string, collectorNumber:string, card:MTGCard) {
+    const cardKey = `MTGSIM_${set}_${collectorNumber}`.toUpperCase()
+    ls.set<MTGCard>(cardKey, card)
+}
+
+export function loadCardData(set:string, collectorNumber:string) {
+    const cardKey = `MTGSIM_${set}_${collectorNumber}`.toUpperCase()
+    return ls.get<MTGCard>(cardKey)
 }
 
 class MTGSim {
@@ -39,39 +52,13 @@ class MTGSim {
     }
 
     private parseDeck(deck:string):MTGCard[] {
-        const regex = /(\d+) ([^(]+) (\([\S]{3}\)) ([\d]+)/
+        const regex = ARENA_EXPORT_REGEX
 
         return deck.split("\r").flatMap(line => line.split("\n")).flatMap(line => {
             let match = regex.exec(line);
             if(match) {
-                let count = parseInt(match[1]);
-                let name = match[2];
-                //Ignore set and number for now
-                return Array(count).fill(true).map(_ => {return {
-                    name: name,
-                    types: ["Haunted Ridge",
-                    "Hive of the Eye Tyrant",
-                    "Savai Triome",
-                    "Blightstep Pathway",
-                    "Brightclimb Pathway",
-                    "Blood Crypt",
-                    "Sacred Foundry",
-                    "Godless Shrine"].includes(name) ? ["Land"] : [],
-                    tapped: false,
-                    isPermanent: !["Faithless Looting",
-                    "Bone Shards",
-                    "Can't Stay Away",
-                    "Revival // Revenge"
-                    ].includes(name),
-                    isLand: ["Haunted Ridge",
-                    "Hive of the Eye Tyrant",
-                    "Savai Triome",
-                    "Blightstep Pathway",
-                    "Brightclimb Pathway",
-                    "Blood Crypt",
-                    "Sacred Foundry",
-                    "Godless Shrine"].includes(name), //Manually checking types before implementing scryfall
-                } as MTGCard})
+                let [, count, cardName, setName, setNumber] = match
+                return Array(parseInt(count)).fill(true).map(() => {return loadCardData(setName, setNumber)})
             } else  return []
         })
     }

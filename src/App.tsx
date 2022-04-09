@@ -3,19 +3,22 @@ import './App.css';
 import YAML from 'yaml'
 import {script} from './samples'
 import { MTGCard, MTGScript } from './models/classes';
-import MTGSim from './models/sim';
+import MTGSim, { ARENA_EXPORT_REGEX, storeCardData } from './models/sim';
 import * as Scry from "scryfall-sdk";
 import { CardIdentifier } from 'scryfall-sdk';
+import { useLocalStorage } from '@rehooks/local-storage';
+import {useAsync} from './useAsync'
 
 //Load file content from script.yaml
 
 function App() {
 
-  const [inputScript, setInputScript] = useState(script)
+  const [inputScript, setInputScript] = useLocalStorage<string>('MTGSIM_inputScript', script)
   const [validScript, setValidScript] = useState(false)
   const [validDeck, setValidDeck] = useState(false)
   const [runningSim, setRunningSim] = useState(false)
   const [log, setLog] = useState("")
+  
 
   useEffect(() => {
     setValidScript(false)
@@ -35,8 +38,7 @@ function App() {
   }
 
   const validateDeck = async () => {
-
-    const regex = /(\d+) ([^(]+) \(([\S]{3})\) ([\d]+)/
+    const regex = ARENA_EXPORT_REGEX
     let deck = (YAML.parse(inputScript) as MTGScript | undefined)?.deck.trim()
     if(deck) {
       let collection = deck.split("\r").flatMap(line => line.split("\n")).flatMap(line => {
@@ -44,11 +46,13 @@ function App() {
 
         let match = regex.exec(line);
         if(match) {
-          let count = parseInt(match[1]);
-          let cardName = match[2];
-          let setName = match[3];
-          let setNumber = match[4];
+          //let count = parseInt(match[1]);
+          //let cardName = match[2];
+          //let setName = match[3];
+          //let setNumber = match[4];
+          let [, , cardName, setName, setNumber] = match
           return Scry.CardIdentifier.bySet(setName, setNumber)
+          //return Scry.CardIdentifier.byName(cardName).
         } else {
           return line;
         }
@@ -64,17 +68,19 @@ function App() {
           const cards = await Scry.Cards.collection(...cardIds).waitForAll();
           for (const card of cards) {
             //console.log(card.name);
-            console.log({
+            let myCard = {
               name: card.name,
               types: card.type_line.split("—").flatMap(t => t.split(" ")).map(t => t.trim()).filter(t => t !== ""),
               isPermanent: ["Creature", "Planeswalker", "Artifact", "Enchantment", "Land"].some(t => card.type_line.includes(t)),
               isLand: card.type_line.includes("Land"),
-            } as MTGCard)
+            } as MTGCard
+            
+            storeCardData(card.set, card.collector_number, myCard)
           }
 
           setValidDeck(true)
           setLog("Card checking done")
-          console.log(cards)
+          //console.log(cards)
         } catch (e) {
           setValidDeck(false)
           setLog("Invalid cards found:\n" + e)
@@ -86,6 +92,13 @@ function App() {
       setLog("No deck in script to validate")
     }
   }
+  const asyncValidateDeck = useAsync(validateDeck, false)
+  useEffect(() => {
+    if(asyncValidateDeck.status === "error") {
+      setValidDeck(false)
+      setLog("Error validating deck:\n" + asyncValidateDeck.error)
+    }
+  }, [asyncValidateDeck.status])
 
   const runSim  = () => {
     setRunningSim(true)
@@ -119,7 +132,7 @@ function App() {
     <div id="navigation">
         <ol>
             <li><button onClick={validateScript}>1. Validate Script</button></li>
-            <li><button onClick={validateDeck} disabled={!validScript}>2. Fetch Cards</button></li>
+            <li><button onClick={asyncValidateDeck.execute} disabled={!validScript || asyncValidateDeck.status === "pending"}>2. Validate Deck</button></li>
             <li><button onClick={runSim} disabled={!validScript || !validDeck || runningSim}>3. Run Sim</button></li>
         </ol>
     </div>

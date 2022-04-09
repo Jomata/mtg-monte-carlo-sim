@@ -3,7 +3,7 @@ import './App.css';
 import YAML from 'yaml'
 import {script} from './samples'
 import { MTGCard, MTGScript } from './models/classes';
-import MTGSim, { ARENA_EXPORT_REGEX, storeCardData } from './models/sim';
+import MTGSim, { ARENA_EXPORT_REGEX, loadCardData, storeCardData } from './models/sim';
 import * as Scry from "scryfall-sdk";
 import { CardIdentifier } from 'scryfall-sdk';
 import { useLocalStorage } from '@rehooks/local-storage';
@@ -42,7 +42,7 @@ function App() {
     let deck = (YAML.parse(inputScript) as MTGScript | undefined)?.deck.trim()
     if(deck) {
       let collection = deck.split("\r").flatMap(line => line.split("\n")).flatMap(line => {
-        if(line === "Deck") return;
+        if(line === "Deck") return [];
 
         let match = regex.exec(line);
         if(match) {
@@ -51,6 +51,9 @@ function App() {
           //let setName = match[3];
           //let setNumber = match[4];
           let [, , cardName, setName, setNumber] = match
+          //If we already have the card data stored, we don't do anything
+          if(loadCardData(setName, setNumber) !== undefined) return [];
+
           return Scry.CardIdentifier.bySet(setName, setNumber)
           //return Scry.CardIdentifier.byName(cardName).
         } else {
@@ -64,26 +67,32 @@ function App() {
         setLog("Invalid cards found:\n" + misreads.join("\n"))
       } else {
         const cardIds = collection.filter((c):c is CardIdentifier => c as CardIdentifier !== undefined)
-        try {
-          const cards = await Scry.Cards.collection(...cardIds).waitForAll();
-          for (const card of cards) {
-            //console.log(card.name);
-            let myCard = {
-              name: card.name,
-              types: card.type_line.split("—").flatMap(t => t.split(" ")).map(t => t.trim()).filter(t => t !== ""),
-              isPermanent: ["Creature", "Planeswalker", "Artifact", "Enchantment", "Land"].some(t => card.type_line.includes(t)),
-              isLand: card.type_line.includes("Land"),
-            } as MTGCard
-            
-            storeCardData(card.set, card.collector_number, myCard)
-          }
+        if(cardIds.length > 0) {
+          try {
+            const cards = await Scry.Cards.collection(...cardIds).waitForAll();
+            for (const card of cards) {
+              //console.log(card.name);
+              let myCard = {
+                name: card.name,
+                types: card.type_line.split("—").flatMap(t => t.split(" ")).map(t => t.trim()).filter(t => t !== ""),
+                isPermanent: ["Creature", "Planeswalker", "Artifact", "Enchantment", "Land"].some(t => card.type_line.includes(t)),
+                isLand: card.type_line.includes("Land"),
+              } as MTGCard
+              
+              storeCardData(card.set, card.collector_number, myCard)
+            }
 
+            setValidDeck(true)
+            setLog("Card checking done")
+            //console.log(cards)
+          } catch (e) {
+            setValidDeck(false)
+            setLog("Invalid cards found:\n" + e)
+          }
+        } else {
+          //No new cards to store, we have everything cached
           setValidDeck(true)
           setLog("Card checking done")
-          //console.log(cards)
-        } catch (e) {
-          setValidDeck(false)
-          setLog("Invalid cards found:\n" + e)
         }
       }
     }
@@ -96,7 +105,7 @@ function App() {
   useEffect(() => {
     if(asyncValidateDeck.status === "error") {
       setValidDeck(false)
-      setLog("Error validating deck:\n" + asyncValidateDeck.error)
+      setLog("Error validating deck")
     }
   }, [asyncValidateDeck.status])
 

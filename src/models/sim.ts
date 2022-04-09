@@ -29,12 +29,13 @@ class MTGSim {
         this.game = new MTGGame(deck);
     }
 
-    public run(times:number) {
+    public run(times:number):SimTally[] {
         this.results = []
         for (let i = 0; i < times; i++) {
             this.simulate();
         }
         console.log('Results',this.results)
+        return this.results;
     }
 
     private parseDeck(deck:string):MTGCard[] {
@@ -374,8 +375,12 @@ class MTGGame {
                 console.error("Bottom", bottom.map(c => c.name))
                 throw new Error("Too many cards in mulligan")
             }
-            //Add bottom to the start of the library
-            this._library = bottom.concat(this._library);
+            if(bottom.length > 0) {
+                //Add bottom to the start of the library
+                this.log("Keeping", hand.map(c => c.name).join(" | "))
+                this.log("Bottoming", bottom.map(c => c.name).join(" | "))
+                this._library = bottom.concat(this._library);
+            }
         } else {
             this._hand = cards;
         }

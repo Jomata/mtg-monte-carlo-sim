@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import logo from './logo.svg';
 import './App.css';
 import YAML from 'yaml'
 import {script} from './samples'
-import { MTGScript } from './models/classes';
+import { MTGCard, MTGScript } from './models/classes';
 import MTGSim from './models/sim';
+import * as Scry from "scryfall-sdk";
+import { CardIdentifier } from 'scryfall-sdk';
 
 //Load file content from script.yaml
 
@@ -33,8 +34,57 @@ function App() {
     }
   }
 
-  const validateDeck = () => {
-    setValidDeck(true)
+  const validateDeck = async () => {
+
+    const regex = /(\d+) ([^(]+) \(([\S]{3})\) ([\d]+)/
+    let deck = (YAML.parse(inputScript) as MTGScript | undefined)?.deck.trim()
+    if(deck) {
+      let collection = deck.split("\r").flatMap(line => line.split("\n")).flatMap(line => {
+        if(line === "Deck") return;
+
+        let match = regex.exec(line);
+        if(match) {
+          let count = parseInt(match[1]);
+          let cardName = match[2];
+          let setName = match[3];
+          let setNumber = match[4];
+          return Scry.CardIdentifier.bySet(setName, setNumber)
+        } else {
+          return line;
+        }
+      })
+
+      let misreads = collection.filter((c):c is string => typeof c === "string")
+      if(misreads.length > 0) {
+        setValidDeck(false)
+        setLog("Invalid cards found:\n" + misreads.join("\n"))
+      } else {
+        const cardIds = collection.filter((c):c is CardIdentifier => c as CardIdentifier !== undefined)
+        try {
+          const cards = await Scry.Cards.collection(...cardIds).waitForAll();
+          for (const card of cards) {
+            //console.log(card.name);
+            console.log({
+              name: card.name,
+              types: card.type_line.split("—").flatMap(t => t.split(" ")).map(t => t.trim()).filter(t => t !== ""),
+              isPermanent: ["Creature", "Planeswalker", "Artifact", "Enchantment", "Land"].some(t => card.type_line.includes(t)),
+              isLand: card.type_line.includes("Land"),
+            } as MTGCard)
+          }
+
+          setValidDeck(true)
+          setLog("Card checking done")
+          console.log(cards)
+        } catch (e) {
+          setValidDeck(false)
+          setLog("Invalid cards found:\n" + e)
+        }
+      }
+    }
+    else{
+      setValidDeck(false)
+      setLog("No deck in script to validate")
+    }
   }
 
   const runSim  = () => {

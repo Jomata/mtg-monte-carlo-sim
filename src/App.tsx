@@ -8,6 +8,7 @@ import * as Scry from "scryfall-sdk";
 import { CardIdentifier } from 'scryfall-sdk';
 import { useLocalStorage } from '@rehooks/local-storage';
 import {useAsync} from './useAsync'
+import { countUniqueElements } from './util';
 
 //Load file content from script.yaml
 
@@ -119,9 +120,19 @@ function App() {
     const parsed = YAML.parse(inputScript) as MTGScript;
     let sim = new MTGSim(parsed);
     console.log('Running sim')
-    let runsCount = 100
+    let runsCount = 200
     let results = sim.run(runsCount)
-    let resultsLog = results.map(r => `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`)
+    //Ordenar resultados de mas resultados a menos
+    //Poner el desglosado de cuantas veces termino en cada turno
+    
+    let resultsLog = results.sort((a, b) => b.turns.length - a.turns.length).flatMap(r => 
+      [
+        `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`,
+        //Count all the turns
+        ... Array.from(countUniqueElements(r.turns)).sort((a, b) => a[0] - b[0]).map(t => ` > Turn ${t[0]}: ${t[1]} (${Math.round(t[1]*100/r.turns.length)}%)`),
+      ]
+    )
+    
     let actionsLog = sim.actionLog
     setRunningSim(false)
     setLog(resultsLog.concat(actionsLog).join("\n"))

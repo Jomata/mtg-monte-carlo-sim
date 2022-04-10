@@ -115,25 +115,37 @@ class MTGSim {
         }
     }
 
-    private runPhaseActions(actions?:PhaseAction[]) {
-        actions?.forEach(phase => {
+    private runPhaseActions(actions?:PhaseAction[], recursionFailsafe:number = 0) {
+        let actionsTaken = (actions || []).map(phase => {
             //console.debug("--- Evaluating Phase Action ---", phase.name)
             if (phase.if) {
                 //console.debug(" > Conditions:", phase.if)
                 if (this.checkConditions(phase.if)) {
                     //console.debug(" > Conditions met, running actions")
                     this.doActions(phase.do);
+                    return true;
                 } else if(phase.else) {
                     //console.debug(" > Conditions not met, running else actions")
                     this.doActions(phase.else);
+                    return true;
                 } else {
                     //console.debug(" > Conditions not met, no else actions")
+                    return false;
                 }
             } else {
                 //console.debug(" > No conditions, running actions")
                 this.doActions(phase.do);
+                return true;
             }
         })
+
+        if(recursionFailsafe >= 10 + this.game.turn) {
+            console.error("Recursion Failsafe triggered")
+        }
+
+        if(!this.gameStopFlag && recursionFailsafe < 10 + this.game.turn && actionsTaken.some(a => a === true)) {
+            this.runPhaseActions(actions, recursionFailsafe++);
+        }
     }
 
     private runCardActions(actions:CardAction[], card:MTGCard) {
@@ -192,6 +204,7 @@ class MTGSim {
             //If we don't, we push a new tally with the current turn
             this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.tally, this.game.turn));
             this.gameStopFlag = true;
+            this.game.end();
             this.logAction("ITERATION END: ", action.tally?.toUpperCase())
         }
     }
@@ -320,8 +333,8 @@ class MTGGame {
         this.playLand("Land")
 
         this.log("[HAND]", this.hand.map(c => c.name).join("|"))
-        if(this.battlefield.length > 0) this.log("[BATTLEFIELD]", this.battlefield.map(c => c.name).join("|"))
-        if(this.graveyard.length > 0) this.log("[GRAVEYARD]", this.graveyard.map(c => c.name).join("|"))
+        if(this.battlefield.length > 0) this.log("[FIELD]", this.battlefield.map(c => c.name).join("|"))
+        if(this.graveyard.length > 0) this.log("[YARD]", this.graveyard.map(c => c.name).join("|"))
         if(this.exile.length > 0) this.log("[EXILE]", this.exile.map(c => c.name).join("|"))
         this.log(`${this.lands.length} lands`)
         

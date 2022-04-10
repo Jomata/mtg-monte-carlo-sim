@@ -116,26 +116,23 @@ class MTGSim {
     }
 
     private runPhaseActions(actions?:PhaseAction[], recursionFailsafe:number = 0) {
-        let actionsTaken = (actions || []).map(phase => {
+        let actionsTaken = (actions || []).map(phaseAction => {
             //console.debug("--- Evaluating Phase Action ---", phase.name)
-            if (phase.if) {
+            if (phaseAction.if) {
                 //console.debug(" > Conditions:", phase.if)
-                if (this.checkConditions(phase.if)) {
+                if (this.checkConditions(phaseAction.if)) {
                     //console.debug(" > Conditions met, running actions")
-                    this.doActions(phase.do);
-                    return true;
-                } else if(phase.else) {
+                    return this.doActions(phaseAction.do);
+                } else if(phaseAction.else) {
                     //console.debug(" > Conditions not met, running else actions")
-                    this.doActions(phase.else);
-                    return true;
+                    return this.doActions(phaseAction.else);
                 } else {
                     //console.debug(" > Conditions not met, no else actions")
                     return false;
                 }
             } else {
                 //console.debug(" > No conditions, running actions")
-                this.doActions(phase.do);
-                return true;
+                return this.doActions(phaseAction.do);
             }
         })
 
@@ -165,48 +162,67 @@ class MTGSim {
         })
     }
 
-    private doActions(actions: Action[]) {
-        actions.forEach(this.doAction.bind(this))
+    private doActions(actions: Action[]):boolean {
+        return actions.map(this.doAction.bind(this)).some(a => a === true);
     }
 
-    private doAction(action:Action) {
-        if(this.gameStopFlag) return;
+    private doAction(action:Action):boolean {
+        let anyAction = false;
+        if(this.gameStopFlag) return false;
 
         if(action.mill) {
             this.game.mill(action.mill);
+            anyAction = true;
         }
         if(action.draw) {
             this.game.draw(action.draw);
+            anyAction = true;
         }
         if(action.tutor) {
             this.game.tutorCard(action.tutor);
+            anyAction = true;
         }
         if(action.exile) {
             this.game.exileFromYard(action.exile);
+            anyAction = true;
         }
         if(action.discard) {
             this.game.discard(action.discard);
+            anyAction = true;
         }
         if(action.reanimate) {
             this.game.reanimate(action.reanimate);
+            anyAction = true;
         }
         if(action.tapLand) {
             this.game.tapLand(action.tapLand);
+            anyAction = true;
         }
         if(action.cast) {
             this.game.cast(action.cast);
+            anyAction = true;
         }
         if(action.flashback) {
             this.game.flashback(action.flashback);
+            anyAction = true;
         }
         if(action.tally) {
+            //Talies are not considered game actions
             //If we have a tally, we need to add the turn to the tally
             //If we don't, we push a new tally with the current turn
             this.results.find(r => r.name === action.tally)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.tally, this.game.turn));
+        }
+        //End tallies up AND ends the simulation
+        if(action.end) {
+            //Ending the game is also not considered a game action
+            //If we have a tally, we need to add the turn to the tally
+            //If we don't, we push a new tally with the current turn
+            this.results.find(r => r.name === action.end)?.turns.push(this.game.turn) || this.results.push(new SimTally(action.end, this.game.turn));
             this.gameStopFlag = true;
             this.game.end();
-            this.logAction("ITERATION END: ", action.tally?.toUpperCase())
+            this.logAction("ITERATION END: ", action.end?.toUpperCase())
         }
+        return anyAction;
     }
     
     private checkConditions(conditions: Condition[]):boolean {

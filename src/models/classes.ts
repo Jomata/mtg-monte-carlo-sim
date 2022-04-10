@@ -59,4 +59,5 @@ export type Action = {
     cast?: string,
     flashback?: string,
     tally?: string,
+    end?:string,
 }

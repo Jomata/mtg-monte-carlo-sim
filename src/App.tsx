@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import "./ResizeSplitter.css";
+import "./components/ResizeSplitter.css";
 import YAML from 'yaml'
-import {script} from './samples'
+import {script} from './data/samples'
 import { MTGCard, MTGScript } from './models/types';
 import { ARENA_EXPORT_REGEX, loadCardData, storeCardData, countUniqueElements } from './models/utils';
 import {MTGSim} from "./models/MTGSim";

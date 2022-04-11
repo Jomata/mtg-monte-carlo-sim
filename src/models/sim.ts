@@ -170,6 +170,8 @@ class MTGSim {
         let anyAction = false;
         if(this.gameStopFlag) return false;
 
+        //TODO: Add: Sacrifice (battlefield -> yard, for use with Undead Butler)
+        //TODO: Add: Shuffle deck (for use after tutoring with Goblin Engineer)
         if(action.mill) {
             this.game.mill(action.mill);
             anyAction = true;
@@ -206,6 +208,7 @@ class MTGSim {
             this.game.flashback(action.flashback);
             anyAction = true;
         }
+        //TODO: Make sure we're not tallying up more than once when we repeat actions
         if(action.tally) {
             //Talies are not considered game actions
             //If we have a tally, we need to add the turn to the tally

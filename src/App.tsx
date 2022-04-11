@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
-import "./SampleSplitter.css";
+import "./ResizeSplitter.css";
 import YAML from 'yaml'
 import {script} from './samples'
-import { MTGCard, MTGScript } from './models/classes';
-import MTGSim, { ARENA_EXPORT_REGEX, loadCardData, storeCardData } from './models/sim';
+import { MTGCard, MTGScript } from './models/types';
+import { ARENA_EXPORT_REGEX, loadCardData, storeCardData, countUniqueElements } from './models/utils';
+import {MTGSim} from "./models/MTGSim";
 import * as Scry from "scryfall-sdk";
 import { CardIdentifier } from 'scryfall-sdk';
 import { useLocalStorage } from '@rehooks/local-storage';
-import {useAsync} from './useAsync'
-import { countUniqueElements } from './util';
+import {useAsync} from './hooks/useAsync';
 import Resizable from 'react-resizable-layout';
-import SampleSplitter from './SampleSplitter';
+import ResizeSplitter from './components/ResizeSplitter';
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-yaml";
 import "ace-builds/src-noconflict/theme-kuroir";
@@ -176,8 +176,8 @@ on:
 
   return (
     <div className="flex flex-column h-screen bg-dark font-mono color-white overflow-hidden">
-      <div className="bg-darker contents" style={{height: `50px`}}>MTG Monte Carlo Simulator</div>
-      <SampleSplitter dir="horizontal" fixed={true} />
+      <div className="bg-darker contents" style={{height: `50px`}}>MTG Monte Carlo Simulator | Script Guide</div>
+      <ResizeSplitter dir="horizontal" fixed={true} />
 
     <Resizable axis="x" initial={sidebarWidth} min={250} reverse={true}>
    {({ position: x, splitterProps }) => { 
@@ -206,7 +206,7 @@ on:
           editorProps={{ $blockScrolling: true }}
         />
       </div>
-      <SampleSplitter id={'splitter'} {...splitterProps} />
+      <ResizeSplitter id={'splitter'} {...splitterProps} />
       <div 
           id={'right-block'} 
           style={{
@@ -231,7 +231,7 @@ on:
     </div>
     )}}
   </Resizable>
-  <SampleSplitter dir="horizontal" fixed={true} />
+  <ResizeSplitter dir="horizontal" fixed={true} />
   <div className="bg-darker contents" style={{height: `50px`}}>Thanks to: scryfall, react-resizable-layout, scryfall-sdk, eemeli.org/yaml, react-ace, create-react-app</div>
   </div>
   )

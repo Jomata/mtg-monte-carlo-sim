@@ -61,3 +61,17 @@ export type Action = {
     tally?: string,
     end?:string,
 }
+
+export class SimTally {
+    name: string;
+    turns: number[];
+
+    public get averageTurn() {
+        return this.turns.reduce((a, b) => a + b, 0) / this.turns.length;
+    }
+
+    constructor(name: string, turn?:number) {
+        this.name = name;
+        this.turns = turn ? [turn] : [];
+    }
+}

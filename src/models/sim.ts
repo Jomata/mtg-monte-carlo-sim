@@ -146,7 +146,6 @@ class MTGSim {
     }
 
     private runCardActions(actions:CardAction[], card:MTGCard) {
-        //TODO: Use MTG.findCard to check if the card matches the identifier
         actions?.filter(a => MTGGame.isMatch(a.card, card)).forEach(action => {
             if (action.if) {
                 if (this.checkConditions(action.if)) {
@@ -170,8 +169,7 @@ class MTGSim {
         let anyAction = false;
         if(this.gameStopFlag) return false;
 
-        //TODO: Add: Sacrifice (battlefield -> yard, for use with Undead Butler)
-        //TODO: Add: Shuffle deck (for use after tutoring with Goblin Engineer)
+
         if(action.mill) {
             this.game.mill(action.mill);
             anyAction = true;
@@ -208,7 +206,7 @@ class MTGSim {
             this.game.flashback(action.flashback);
             anyAction = true;
         }
-        //TODO: Make sure we're not tallying up more than once when we repeat actions
+        
         if(action.tally) {
             //Talies are not considered game actions
             //If we have a tally, we need to add the turn to the tally
@@ -260,8 +258,6 @@ class MTGSim {
     }
 }
 
-//TODO: Big fix: Script should be able to handle multiple cards with the same name
-//Right now if I remove a single card named X, it will remove all cards named X
 class MTGGame {
     private _deck:MTGCard[];
     private _library:MTGCard[] = [];
@@ -312,6 +308,7 @@ class MTGGame {
     }
 
     public onDraw?:(card:MTGCard) => void;
+    public onUpkeep?:() => void;
     public onMainOne?:() => void;
     public onCombat?:() => void;
     public onMainTwo?:() => void;
@@ -319,6 +316,8 @@ class MTGGame {
 
     public onCast?:(card:MTGCard) => void;
     public onETB?:(card:MTGCard) => void;
+    public onLTB?:(card:MTGCard) => void;
+    public onDestroy?:(card:MTGCard) => void;
     public onMulligan?:(cards: MTGCard[], mulliganCount: number) => [hand:MTGCard[] | undefined, bottom:MTGCard[]]
 
     public playTurn() {
@@ -340,10 +339,10 @@ class MTGGame {
         //this.log(`Turn ${this._turn} start`);
         this._battlefield.forEach(card => {card.tapped = false});
         this._lands.forEach(card => {card.tapped = false});
-        //TODO: call events
-        //Upkeep step
-        //TODO: call events
-        //Draw step
+        
+        if(this._endFlag) return;
+        if(this.onUpkeep) this.onUpkeep();
+
         if(this._endFlag) return;
         if(this._turn > 1) this.draw(1);
         //Main 1
@@ -380,7 +379,7 @@ class MTGGame {
     private initialDraw() {
         this._library = this._deck.map(c => c).sort(() => Math.random() - 0.5);
         let cards = this._library.splice(-7);
-        //TODO: Check no more than 6 mulligans
+        
         if(this.onMulligan) {
             let mulliganCount = 0
             let hand:MTGCard[] | undefined = []

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
+import "./SampleSplitter.css";
 import YAML from 'yaml'
 import {script} from './samples'
 import { MTGCard, MTGScript } from './models/classes';
@@ -9,17 +10,20 @@ import { CardIdentifier } from 'scryfall-sdk';
 import { useLocalStorage } from '@rehooks/local-storage';
 import {useAsync} from './useAsync'
 import { countUniqueElements } from './util';
+import Resizable from 'react-resizable-layout';
+import SampleSplitter from './SampleSplitter';
 
 //Load file content from script.yaml
 
 function App() {
 
+  const [sidebarWidth, setSidebarWidth]= useLocalStorage<number>('MTGSIM_sidebarWidth', 500)
   const [inputScript, setInputScript] = useLocalStorage<string>('MTGSIM_inputScript', script)
   const [validScript, setValidScript] = useState(false)
   const [validDeck, setValidDeck] = useState(false)
   const [runningSim, setRunningSim] = useState(false)
+  const [simCount, setSimCount] = useLocalStorage<number>('MTGSIM_simCount', 100)
   const [log, setLog] = useState("")
-  
 
   useEffect(() => {
     setValidScript(false)
@@ -120,14 +124,13 @@ function App() {
     const parsed = YAML.parse(inputScript) as MTGScript;
     let sim = new MTGSim(parsed);
     console.log('Running sim')
-    let runsCount = 200
-    let results = sim.run(runsCount)
+    let results = sim.run(simCount)
     //Ordenar resultados de mas resultados a menos
     //Poner el desglosado de cuantas veces termino en cada turno
     
     let resultsLog = results.sort((a, b) => b.turns.length - a.turns.length).flatMap(r => 
       [
-        `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/runsCount)}%`,
+        `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/simCount)}%`,
         //Count all the turns
         ... Array.from(countUniqueElements(r.turns)).sort((a, b) => a[0] - b[0]).map(t => ` > Turn ${t[0]}: ${t[1]} (${Math.round(t[1]*100/r.turns.length)}%)`),
       ]
@@ -178,44 +181,67 @@ on:
   }
 
   return (
-    //Two large columns
-    //Left one with a full size text area to enter the script
-    //Right one has 3 buttons (Validate Script, Load Cards, Run Sim) and an output textarea
-    <>
-    <div id="header">
-        <h1>Header</h1>
-    </div>
-    <div id="wrapper">
-        <div id="content">
-            <textarea 
-              id="script" 
-              style={{width:"98%",minHeight:"598px"}} 
-              value={inputScript} 
-              onChange={(e) => setInputScript(e.target.value)}
-            />
+    <div className="flex flex-column h-screen bg-dark font-mono color-white overflow-hidden">
+      <div className="bg-darker contents" style={{height: `50px`}}>MTG Goldfish Monte Carlo Simulator</div>
+      <SampleSplitter dir="horizontal" fixed={true} />
+
+    <Resizable axis="x" initial={sidebarWidth} min={250} reverse={true}>
+   {({ position: x, splitterProps }) => { 
+
+     if(x !== sidebarWidth) {
+       
+       setTimeout(() => {
+         setSidebarWidth(x)
+         //console.log('Setting sidebar width to ' + x)
+       }, 1000)
+       
+     }
+     
+     return (
+     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+       <div
+         id={'yaml-editor'}
+         style={{
+           width: `calc(100% - ${x}px)`
+         }}
+       >
+         <textarea 
+            id="script" 
+            style={{width:"100%",height:"100%"}} 
+            value={inputScript} 
+            onChange={(e) => setInputScript(e.target.value)}
+          />
+      </div>
+      <SampleSplitter id={'splitter'} {...splitterProps} />
+      <div 
+          id={'right-block'} 
+          style={{
+            width:x
+          }}
+        >
+        <div style={{height:"20px"}}>
+          <button onClick={validateScript}>1. Validate Script</button>
+          <button onClick={asyncValidateDeck.execute} disabled={!validScript || asyncValidateDeck.status === "pending"}>2. Validate Deck</button>
+          <button onClick={runSim} disabled={!validScript || !validDeck || runningSim}>3. Run Sim</button>
+          <input type="number" value={simCount} disabled={runningSim} style={{width:'50px'}} onChange={(e) => setSimCount(Number(e.target.value))} /> times
         </div>
+        <div style={{height:`calc(100% - 20px)`}}>
+          <textarea
+            id="log"
+            style={{width:"100%",height:"100%"}}
+            readOnly={true}
+            value={log}
+          />
+        </div>
+      </div>
     </div>
-    <div id="navigation">
-        <ol>
-            <li><button onClick={validateScript}>1. Validate Script</button></li>
-            <li><button onClick={asyncValidateDeck.execute} disabled={!validScript || asyncValidateDeck.status === "pending"}>2. Validate Deck</button></li>
-            <li><button onClick={runSim} disabled={!validScript || !validDeck || runningSim}>3. Run Sim</button></li>
-            <li><button onClick={runTest}>Run test</button></li>
-        </ol>
-    </div>
-    <div id="extra">
-        <h3>Log</h3>
-        <textarea
-          id="log"
-          style={{width:"98%",minHeight:"474px"}}
-          readOnly={true}
-          value={log}
-        />
-    </div>
-    <div id="footer"><p>Footer</p>
-    </div>
-    </>
-  );
+    )}}
+  </Resizable>
+  <SampleSplitter dir="horizontal" fixed={true} />
+  <div className="bg-darker contents" style={{height: `50px`}}>Credits: scryfall, react-resizable-layout, scryfall-sdk, eemeli.org/yaml, react-ace</div>
+  </div>
+  )
+
 }
 
 export default App;

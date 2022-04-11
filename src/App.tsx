@@ -12,8 +12,9 @@ import {useAsync} from './useAsync'
 import { countUniqueElements } from './util';
 import Resizable from 'react-resizable-layout';
 import SampleSplitter from './SampleSplitter';
-
-//Load file content from script.yaml
+import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-yaml";
+import "ace-builds/src-noconflict/theme-kuroir";
 
 function App() {
 
@@ -56,16 +57,10 @@ function App() {
 
         let match = regex.exec(line);
         if(match) {
-          //let count = parseInt(match[1]);
-          //let cardName = match[2];
-          //let setName = match[3];
-          //let setNumber = match[4];
           let [, , cardName, setName, setNumber] = match
           //If we already have the card data stored, we don't do anything
           if(loadCardData(setName, setNumber) !== undefined) return [];
-
           return Scry.CardIdentifier.bySet(setName, setNumber)
-          //return Scry.CardIdentifier.byName(cardName).
         } else {
           return line;
         }
@@ -125,9 +120,8 @@ function App() {
     let sim = new MTGSim(parsed);
     console.log('Running sim')
     let results = sim.run(simCount)
-    //Ordenar resultados de mas resultados a menos
-    //Poner el desglosado de cuantas veces termino en cada turno
     
+    //Sorting results from highest to lowest    
     let resultsLog = results.sort((a, b) => b.turns.length - a.turns.length).flatMap(r => 
       [
         `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/simCount)}%`,
@@ -189,12 +183,9 @@ on:
    {({ position: x, splitterProps }) => { 
 
      if(x !== sidebarWidth) {
-       
        setTimeout(() => {
          setSidebarWidth(x)
-         //console.log('Setting sidebar width to ' + x)
        }, 1000)
-       
      }
      
      return (
@@ -205,12 +196,15 @@ on:
            width: `calc(100% - ${x}px)`
          }}
        >
-         <textarea 
-            id="script" 
-            style={{width:"100%",height:"100%"}} 
-            value={inputScript} 
-            onChange={(e) => setInputScript(e.target.value)}
-          />
+         <AceEditor
+          mode="yaml"
+          theme="kuroir"
+          height="100%"
+          width="100%"
+          value={inputScript}
+          onChange={(val, e) => setInputScript(val)}
+          editorProps={{ $blockScrolling: true }}
+        />
       </div>
       <SampleSplitter id={'splitter'} {...splitterProps} />
       <div 
@@ -241,7 +235,6 @@ on:
   <div className="bg-darker contents" style={{height: `50px`}}>Credits: scryfall, react-resizable-layout, scryfall-sdk, eemeli.org/yaml, react-ace</div>
   </div>
   )
-
 }
 
 export default App;

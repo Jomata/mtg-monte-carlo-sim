@@ -13,6 +13,7 @@
     "@types/react-dom": "^17.0.14",
     "local-storage": "^2.0.0",
     "react": "^18.0.0",
+    "react-ace": "^9.5.0",
     "react-dom": "^18.0.0",
     "react-resizable-layout": "^0.1.9",
     "react-scripts": "5.0.0",

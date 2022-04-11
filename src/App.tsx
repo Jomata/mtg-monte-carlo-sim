@@ -126,7 +126,7 @@ function App() {
       [
         `${r.turns.length} ${r.name}: Turn avg ${Math.round(r.averageTurn*100)/100}, ${Math.round(r.turns.length*100/simCount)}%`,
         //Count all the turns
-        ... Array.from(countUniqueElements(r.turns)).sort((a, b) => a[0] - b[0]).map(t => ` > Turn ${t[0]}: ${t[1]} (${Math.round(t[1]*100/r.turns.length)}%)`),
+        ...Array.from(countUniqueElements(r.turns)).sort((a, b) => a[0] - b[0]).map(t => ` > Turn ${t[0]}: ${t[1]} (${Math.round(t[1]*100/r.turns.length)}%)`),
       ]
     )
     
@@ -176,7 +176,7 @@ on:
 
   return (
     <div className="flex flex-column h-screen bg-dark font-mono color-white overflow-hidden">
-      <div className="bg-darker contents" style={{height: `50px`}}>MTG Goldfish Monte Carlo Simulator</div>
+      <div className="bg-darker contents" style={{height: `50px`}}>MTG Monte Carlo Simulator</div>
       <SampleSplitter dir="horizontal" fixed={true} />
 
     <Resizable axis="x" initial={sidebarWidth} min={250} reverse={true}>
@@ -232,7 +232,7 @@ on:
     )}}
   </Resizable>
   <SampleSplitter dir="horizontal" fixed={true} />
-  <div className="bg-darker contents" style={{height: `50px`}}>Credits: scryfall, react-resizable-layout, scryfall-sdk, eemeli.org/yaml, react-ace</div>
+  <div className="bg-darker contents" style={{height: `50px`}}>Thanks to: scryfall, react-resizable-layout, scryfall-sdk, eemeli.org/yaml, react-ace, create-react-app</div>
   </div>
   )
 }

@@ -1,24 +1,27 @@
 export const script = `deck: |
   Deck
-  4 Haunted Ridge (MID) 263
   4 Greasefang, Okiba Boss (NEO) 220
-  1 Hive of the Eye Tyrant (AFR) 258
-  4 Goblin Engineer (MH1) 128
-  3 Can't Stay Away (MID) 213
-  4 Faithless Looting (STA) 38
   4 Parhelion II (WAR) 24
-  2 Wishclaw Talisman (ELD) 110
-  2 Savai Triome (IKO) 253
-  4 Blightstep Pathway (KHM) 252
-  2 Godless Shrine (RNA) 248
-  4 Brightclimb Pathway (ZNR) 259
-  4 Blood Crypt (RNA) 245
-  2 Sacred Foundry (GRN) 254
-  4 Bone Shards (MH2) 76
+  1 Revival // Revenge (RNA) 228
+  2 Can't Stay Away (MID) 213
   4 Stitcher's Supplier (M19) 121
   4 Undead Butler (VOW) 133
-  3 Revival // Revenge (RNA) 228
-  1 Skysovereign, Consul Flagship (KLR) 272
+  4 Faithless Looting (STA) 38
+  2 Seasoned Pyromancer (MH1) 145
+  4 Goblin Engineer (MH1) 128
+  4 Wishclaw Talisman (ELD) 110
+  0 Bone Shards (MH2) 76
+  2 Skysovereign, Consul Flagship (KLR) 272
+  4 Hive of the Eye Tyrant (AFR) 258
+  4 Haunted Ridge (MID) 263
+  4 Savai Triome (IKO) 253
+  2 Blightstep Pathway (KHM) 252
+  3 Godless Shrine (RNA) 248
+  3 Brightclimb Pathway (ZNR) 259
+  4 Blood Crypt (RNA) 245
+  1 Sacred Foundry (GRN) 254
+  1 Hall of Storm Giants (AFR) 257
+
 
 mulligan:
   until:
@@ -38,8 +41,7 @@ on:
       do:
         - tutor: Parhelion II
         - discard: Parhelion II
-  cast:
-    - card: faithless looting #If we don't, we want to keep it
+    - card: Seasoned Pyromancer
       if:
         - hand: revival // revenge > can't stay away
           exactly: 0
@@ -51,6 +53,19 @@ on:
         - draw: 2
         - discard: Parhelion II > Skysovereign, Consul Flagship > Greasefang, Okiba Boss > Bone Shards > Undead Butler > land > any
         - discard: Greasefang, Okiba Boss > Parhelion II > Skysovereign, Consul Flagship > Bone Shards > Undead Butler > land > any
+  cast:
+    - card: faithless looting #If we don't, we want to keep it
+      if:
+        - hand: revival // revenge > can't stay away
+          exactly: 0
+      do:
+        - draw: 2
+        - discard: Parhelion II > Vehicle > Bone Shards > Undead Butler > land > any
+        - discard: Parhelion II > Vehicle > Bone Shards > Undead Butler > land > any
+      else:
+        - draw: 2
+        - discard: Vehicle > Greasefang, Okiba Boss > Bone Shards > Undead Butler > land > any
+        - discard: Greasefang, Okiba Boss > Vehicle > Bone Shards > Undead Butler > land > any
     - card: Can't stay away
       if:
         - graveyard: Greasefang, Okiba Boss
@@ -70,7 +85,7 @@ on:
     if:
       - hand: Greasefang, Okiba Boss
       - lands: 3
-      - graveyard: Parhelion II
+      - graveyard: Vehicle
     do:
       - tapLand: 3
       - cast: Greasefang, Okiba Boss
@@ -78,16 +93,25 @@ on:
     if:
       - hand: Can't Stay Away
       - graveyard: Greasefang, Okiba Boss
-      - graveyard: Parhelion II
+      - graveyard: Vehicle
       - lands: 2
     do:
       - tapLand: 2
       - cast: can't stay away
+  - name: Flashback greasefang w/CSA if both fang and parhelion in yard
+    if:
+      - graveyard: Can't Stay Away
+      - graveyard: Greasefang, Okiba Boss
+      - graveyard: Vehicle
+      - lands: 5
+    do:
+      - tapLand: 5
+      - flashback: Can't Stay Away
   - name: Reanimate greasefang w/RR if both fang and parhelion in yard
     if:
       - hand: Revival // Revenge
       - graveyard: Greasefang, Okiba Boss
-      - graveyard: Parhelion II
+      - graveyard: Vehicle
       - lands: 2
     do:
       - tapLand: 2
@@ -144,11 +168,11 @@ on:
       - tapLand: 3
       - flashback: faithless looting
   
-  - name: Cast goblin engineer if we don't have a parthelion in yard already
+  - name: Cast goblin engineer if we don't have a vehicle in yard already
     if:
       - hand: goblin engineer
       - lands: 2
-      - graveyard: Parhelion II
+      - graveyard: Vehicle
         exactly: 0
     do:
       - tapLand: 2
@@ -163,10 +187,10 @@ on:
       - cast: undead butler
   
   ## Priority #3 is digging for pieces
-  - name: If we have faithless looting and a parhelion, we loot it away
+  - name: If we have faithless looting and a vehicle, we loot it away
     if: 
       - hand: faithless looting
-      - hand: Parhelion II
+      - hand: Vehicle
       - lands: 1
     do:
       - tapLand: 1
@@ -179,6 +203,15 @@ on:
     do:
       - tapLand: 1
       - cast: Stitcher's Supplier
+
+  - name: Cycling triome
+    if:
+      - hand: Savai Triome
+      - lands: 3
+    do:
+      - tapLand: 3
+      - discard: Savai Triome
+      - draw: 1
   
   ## Priority #4 is just casting greasefang if we have nothing better to do
   - name: Cast Greasefang just in case we mill parthelion later
@@ -201,14 +234,14 @@ on:
   - name: If greasefang on battlefield and parhelion in yard, we did the thing
     if:
       - battlefield: Greasefang, Okiba Boss
-      - graveyard: Parhelion II
+      - graveyard: Vehicle
     do:
-      - tally: Success
+      - end: Success
   
   endStep:
-  - name: Give up if we failed by turn 5
+  - name: Give up if we failed by turn 20
     if:
-      - turn: 10
+      - turn: 20
     do:
-      - tally: Failure
+      - end: Failure
 `

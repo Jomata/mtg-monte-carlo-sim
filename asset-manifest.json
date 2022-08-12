@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/mtg-monte-carlo-sim/static/css/main.c5d168f7.css",
-    "main.js": "/mtg-monte-carlo-sim/static/js/main.135ecc79.js",
+    "main.js": "/mtg-monte-carlo-sim/static/js/main.f2e181ca.js",
     "static/js/787.129f5f61.chunk.js": "/mtg-monte-carlo-sim/static/js/787.129f5f61.chunk.js",
     "index.html": "/mtg-monte-carlo-sim/index.html",
     "main.c5d168f7.css.map": "/mtg-monte-carlo-sim/static/css/main.c5d168f7.css.map",
-    "main.135ecc79.js.map": "/mtg-monte-carlo-sim/static/js/main.135ecc79.js.map",
+    "main.f2e181ca.js.map": "/mtg-monte-carlo-sim/static/js/main.f2e181ca.js.map",
     "787.129f5f61.chunk.js.map": "/mtg-monte-carlo-sim/static/js/787.129f5f61.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.c5d168f7.css",
-    "static/js/main.135ecc79.js"
+    "static/js/main.f2e181ca.js"
   ]
 }
